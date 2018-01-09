@@ -121,6 +121,7 @@
 	[root@kuber-master tmp]# cd /opt
 	[root@kuber-master opt]# git clone https://github.com/happy2048/k8s-config-files.git
 	[root@kuber-master ~]# echo "export K8S_CONFIG_FILES=/opt/k8s-config-files" >> ~/.bashrc
+	[root@kuber-master ~]# echo  "export KUBE_APISERVER=https://10.61.0.160:6443" >>  ~/.bashrc
 	[root@kuber-master ~]# source ~/.bashrc 
 	[root@kuber-master ~]# echo $K8S_CONFIG_FILES
 	/opt/k8s_config_files
@@ -887,7 +888,7 @@ Kube-proxy 是实现 Service 的关键组件，kube-proxy 会在每台节点上�
 	[root@kuber-master pki]# kubectl config set-cluster kubernetes \
 	--certificate-authority=ca.pem \
 	--embed-certs=true \
-	--server="https://10.61.0.160:6443" \
+	--server=${KUBE_APISERVER} \
 	--kubeconfig=../kube-proxy.conf
 
 	# kube-proxy set-credentials
