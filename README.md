@@ -975,11 +975,12 @@ Dashboard 是 Kubernetes 社区官方开发的仪表板，有了仪表板后管�
 	[root@kuber-master addons]# mkdir -p /etc/kubernetes/addons/certs && cd /etc/kubernetes/addons 
 	[root@kuber-master addons]# openssl genrsa -des3 -passout pass:x -out certs/dashboard.pass.key 2048
 	[root@kuber-master addons]# openssl rsa -passin pass:x -in certs/dashboard.pass.key -out certs/dashboard.key
-	[root@kuber-master addons]# openssl req -new -key certs/dashboard.key \
-	-out certs/dashboard.csr -subj '/CN=kube-dashboard'
+	[root@kuber-master addons]# openssl req -new -key certs/dashboard.key -out certs/dashboard.csr -subj '/CN=kube-dashboard'
+	[root@kuber-master addons]# openssl x509 -req -sha256 -days 365 -in certs/dashboard.csr \
+	-signkey certs/dashboard.key -out certs/dashboard.crt
 	[root@kuber-master addons]# rm certs/dashboard.pass.key
 	[root@kuber-master addons]# kubectl create secret generic kubernetes-dashboard-certs \
-	--from-file=certs -n kube-system
+        --from-file=certs -n kube-system
 	[root@kuber-master addons]# cp $K8S_CONFIG_FILES/addons/kube-dashboard.yml  ./
 	[root@kuber-master addons]# kubectl apply -f kube-dashboard.yml
 	[root@kuber-master addons]# kubectl -n kube-system get po,svc -l k8s-app=kubernetes-dashboard
