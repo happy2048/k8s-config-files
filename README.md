@@ -706,28 +706,12 @@ Service account 不是通过 CA 进行认证，因此不要通过 CA 来做 Serv
 	
 4 在/etc/kubernetes/目录下，创建encryption.yml的加密 YAML 文件：
 
-	[root@kuber-master manifests]# cat <<EOF > /etc/kubernetes/encryption.yml
-	kind: EncryptionConfig
-	apiVersion: v1
-	resources:
-	  - resources:
-		  - secrets
-		providers:
-		  - aescbc:
-			  keys:
-				- name: key1
-				  secret: mwYib16D3v9fpBqOstsfHlgpniZzPjWvPcRGz2iGDtk=
-		  - identity: {}
-	EOF
+	[root@kuber-master manifests]# cp  $K8S_CONFIG_FILES/master/encryption.yml  /etc/kubernetes
+	[root@kuber-master manifests]# sed -e 's@secret:\(.*\)@secret: mwYib16D3v9fpBqOstsfHlgpniZzPjWvPcRGz2iGDtk=@g' /etc/kubernetes/encryption.yml
 	
 5 在/etc/kubernetes/目录下，创建audit-policy.yml的进阶审核策略 YAML 文件：
 
-	[root@kuber-master manifests]# cat <<EOF > /etc/kubernetes/audit-policy.yml
-	apiVersion: audit.k8s.io/v1beta1
-	kind: Policy
-	rules:
-	- level: Metadata
-	EOF
+	[root@kuber-master manifests]# cp  $K8S_CONFIG_FILES/master/audit-policy.yml  /etc/kubernetes
 	
 6 下载kubelet.service相关文件来管理 kubelet：
 
