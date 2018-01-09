@@ -794,6 +794,7 @@ Node 是主要执行容器实例的节点，可视为工作节点。在这步骤
 	#!/bin/bash
 	for NODE in kuber-node1 kuber-node2 kuber-node3 kuber-node4; do
 		ssh ${NODE} "mkdir -p /etc/kubernetes/pki/"
+		ssh ${NODE} "mkdir -p /etc/kubernetes/manifests"
 		scp /usr/local/bin/kubelet ${NODE}:/usr/local/bin 
 		for FILE in pki/ca.pem pki/ca-key.pem bootstrap.conf; do
 		  scp /etc/kubernetes/${FILE} ${NODE}:/etc/kubernetes/${FILE}
