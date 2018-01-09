@@ -707,7 +707,7 @@ Service account 不是通过 CA 进行认证，因此不要通过 CA 来做 Serv
 4 在/etc/kubernetes/目录下，创建encryption.yml的加密 YAML 文件：
 
 	[root@kuber-master manifests]# cp  $K8S_CONFIG_FILES/master/encryption.yml  /etc/kubernetes
-	[root@kuber-master manifests]# sed -e 's@secret:\(.*\)@secret: mwYib16D3v9fpBqOstsfHlgpniZzPjWvPcRGz2iGDtk=@g' /etc/kubernetes/encryption.yml
+	[root@kuber-master manifests]# sed - 's@secret:\(.*\)@secret: mwYib16D3v9fpBqOstsfHlgpniZzPjWvPcRGz2iGDtk=@g' /etc/kubernetes/encryption.yml
 	
 5 在/etc/kubernetes/目录下，创建audit-policy.yml的进阶审核策略 YAML 文件：
 
