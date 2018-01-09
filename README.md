@@ -1,8 +1,8 @@
-##kubernetes1.8.6手动安装
+## kubernetes1.8.6手动安装
 
 说明： 本教程是对[《Kubernetes v1.8.x 全手動苦工安裝教學》](https://kairen.github.io/2017/10/27/kubernetes/deploy/manual-v1.8/)或者[《Kubernetes 1.8.x 全手动安装教程》](https://www.kubernetes.org.cn/3096.html)的修改补充，因为感觉原文的安装有点混乱，所以这里特意整理了一下，其中有些文字直接使用原文的，望见谅。
 
-###环境准备
+### 环境准备
 
 本次安装的版本为：
 	
@@ -298,7 +298,7 @@ ps: etcd-csr.json文件中hosts字段ip需要把所有etcd节点的ip和主机�
 	member 773eb256b3c437b8 is healthy: got healthy result from https://kuber-master:2379
 	member ed5a8029cadfb1e3 is healthy: got healthy result from https://kuber-node2:2379
 	
-###Calico安装
+### Calico安装
 
 原文的calico安装放在比较靠后的地方，导致依赖它的服务启动不起来，这里我们把它首先安装。
 
@@ -388,7 +388,7 @@ Calico 是一款纯 Layer 3 的数据中心网络方案(不需要 Overlay 网络
 	kuber-node3    (64512)   10.61.0.163/24          
 	kuber-node4    (64512)   10.61.0.164/24          
 
-###Kubernetes Master
+### Kubernetes Master
 
 Master 是 Kubernetes 的大总管，主要创建apiserver、Controller manager与Scheduler来组件管理所有 Node。本步骤将下载 Kubernetes 并安装至 kuber-master上，然后产生相关 TLS Cert 与 CA 密钥，提供给集群组件认证使用。	
 
@@ -688,7 +688,7 @@ Service account 不是通过 CA 进行认证，因此不要通过 CA 来做 Serv
 	-rw------- 1 root root 1679 Jan  8 16:14 scheduler-key.pem
 	-rw-r--r-- 1 root root 1472 Jan  8 16:14 scheduler.pem
 	
-###安装 Kubernetes 核心组件
+### 安装 Kubernetes 核心组件
 
 1 首先复制 Kubernetes 核心组件 YAML 文件，这边我们不透过 Binary 方案来创建 Master 核心组件，而是利用 Kubernetes Static Pod 来创建，因此需下载所有核心组件的Static Pod文件到/etc/kubernetes/manifests目录：
 
@@ -784,7 +784,7 @@ ps: 这边会发现出现 403 Forbidden 问题，这是因为 kube-apiserver use
 	clusterrolebinding "system:kube-apiserver" created
 	[root@kuber-master kubernetes]# kubectl -n kube-system logs -f kube-scheduler-kuber-master
 	
-###Kubernetes Node
+### Kubernetes Node
 
 Node 是主要执行容器实例的节点，可视为工作节点。在这步骤我们会下载 Kubernetes binary 文件，并创建 node 的 certificate 来提供给节点注册认证用。Kubernetes 使用Node Authorizer来提供Authorization mode，这种授权模式会替 Kubelet 生成 API request。
 
