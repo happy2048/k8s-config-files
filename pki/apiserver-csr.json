@@ -1,0 +1,14 @@
+{
+	"CN":"kube-apiserver",
+	"key":{
+		"algo":"rsa",
+		"size":2048
+	},
+	"names":[{
+		"C":"CN",
+		"ST":"Beijing",
+		"L":"haidian",
+		"O":"Kubernetes",
+		"OU":"Kubernetes-manual"
+	}]
+}
