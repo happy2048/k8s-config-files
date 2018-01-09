@@ -821,7 +821,7 @@ Node 是主要执行容器实例的节点，可视为工作节点。在这步骤
 	[root@kuber-master kubernetes]# cat  /tmp/copy-kube-start.sh
 	#!/bin/bash
 	for NODE in kuber-node1 kuber-node2 kuber-node3 kuber-node4; do
-		ssh ${NODE} "system start kubelet"
+		ssh ${NODE} "systemctl start kubelet"
 	done
 	
 ps: 原文中是先启动各个节点的服务再授权，我经过测试，发现如果在未授权的情况下,各节点的kubelet服务根本无法启动，错误报告如下：
