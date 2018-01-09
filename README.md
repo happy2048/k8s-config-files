@@ -126,7 +126,7 @@
 	[root@kuber-master ~]# echo $K8S_CONFIG_FILES
 	/opt/k8s_config_files
 	
-###Etcd安装
+### Etcd安装
 
 在开始安装 Kubernetes 之前，需要先将一些必要系统创建完成，其中 Etcd 就是 Kubernetes 最重要的一环，Kubernetes 会将大部分信息储存于 Etcd 上，来提供给其他节点索取，以确保整个集群运作与沟通正常。
 
