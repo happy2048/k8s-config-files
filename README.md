@@ -1,6 +1,7 @@
 ##kubernetes1.8.6手动安装
 
 说明： 本教程是对[《Kubernetes v1.8.x 全手動苦工安裝教學》](https://kairen.github.io/2017/10/27/kubernetes/deploy/manual-v1.8/)或者[《Kubernetes 1.8.x 全手动安装教程》](https://www.kubernetes.org.cn/3096.html)的修改补充，因为感觉原文的安装有点混乱，所以这里特意整理了一下，其中有些文字直接使用原文的，望见谅。
+
 ###环境准备
 
 本次安装的版本为：
@@ -29,6 +30,7 @@
 首先安装前要确认以下几项都准备好了：
 
 1.节点需要彼此互通，并且kuber-master能够免密码登陆其他节点。
+
 2.所有防火墙与selinux关闭，如Centos:
 
 	systemctl stop firewalld && systemctl disable firewalld
@@ -106,12 +108,14 @@
 	# *  *  *  *  * user-name  command to be executed
 
 	*/2 * * * *  root  ntpdate cn.ntp.org.cn &> /dev/null
+	
 7.在kuber-master上安装cfssl工具，这将会用来建立 TLS certificates。
 
 	[root@kuber-master ~]# export CFSSL_URL="https://pkg.cfssl.org/R1.2"
 	[root@kuber-master ~]# wget "${CFSSL_URL}/cfssl_linux-amd64" -O /usr/local/bin/cfssl
 	[root@kuber-master ~]# wget "${CFSSL_URL}/cfssljson_linux-amd64" -O /usr/local/bin/cfssljson
 	[root@kuber-master ~]# chmod +x /usr/local/bin/cfssl /usr/local/bin/cfssljson
+	
 8.准备需要用到的配置文件
 
 	[root@kuber-master tmp]# cd /opt
@@ -124,15 +128,19 @@
 ###Etcd安装
 
 在开始安装 Kubernetes 之前，需要先将一些必要系统创建完成，其中 Etcd 就是 Kubernetes 最重要的一环，Kubernetes 会将大部分信息储存于 Etcd 上，来提供给其他节点索取，以确保整个集群运作与沟通正常。
+
 1.使用yum安装etcd（该步骤所有etcd节点上进行，这里我只展示在kuber-master的操作，其他etcd节点执行一样）
 
 	[root@kuber-master ~]# yum install epel-release -y
 	[root@kuber-master ~]# yum install etcd -y
 	[root@kuber-master ~]# mkdir /etc/etcd/ssl && chown etcd:etcd  /etc/etcd/ssl
+	
 2.建集群CA与Certificates（以下步骤在kuber-master进行)
+
 2.1 建立/etc/etcd/ssl文件夹，然后进入目录完成以下操作。
 
 	[root@kuber-master etcd]#  cd /etc/etcd/ssl
+	
 2.2 复制ca-config.json与etcd-ca-csr.json文件到本目录下，并产生 CA 密钥（此步骤在kuber-master上进行）：
 
 	[root@kuber-master ssl]# cp $K8S_CONFIG_FILES/pki/ca-config.json  $K8S_CONFIG_FILES/pki/etcd-ca-csr.json ./
@@ -145,6 +153,7 @@
 	2018/01/08 10:30:32 [INFO] signed certificate with serial number 343991803789219532784889668850923759971181192623
 	[root@kuber-master ssl]# ls
 	ca-config.json  etcd-ca.csr  etcd-ca-csr.json  etcd-ca-key.pem  etcd-ca.pem
+	
 ps: 本步骤中的两个json文件无需做更改,其中etcd-ca-csr.json中names字段的值解释如下：
 
 	"C": country
@@ -162,11 +171,13 @@ ps: 本步骤中的两个json文件无需做更改,其中etcd-ca-csr.json中name
 	> -config=ca-config.json \
 	> -profile=kubernetes \
 	> etcd-csr.json | cfssljson -bare etcd
+	
 修改属主：
 
 	[root@kuber-master ~]# chown -R etcd:etcd /etc/etcd/ssl
 
 ps: etcd-csr.json文件中hosts字段ip需要把所有etcd节点的ip和主机名都写进去，我这是三个节点所以就写了三个，另外再加一个127.0.0.1,上述命令出现警告可忽略。
+
 2.4 将生成的相关认证文件复制到所有节点，使用如下脚本执行：
 
 	[root@kuber-master ssl]# cat /tmp/copy.sh 
@@ -180,6 +191,7 @@ ps: etcd-csr.json文件中hosts字段ip需要把所有etcd节点的ip和主机�
 		scp -r /etc/etcd/ssl $i:/etc/etcd
 		ssh $i chown etcd:etcd -R /etc/etcd/ssl
 	done
+	
 2.5 这里我选择静态文件配置etcd，当然也可以像原文那样选择直接在命令行配置，配置文件的地址为/etc/etcd/etcd.conf（配置文件的修改在所有的etcd节点上进行,下面是在kuber-master进行的，不同的节点配置文件的信息有点不同，具体如下）:
 
 	[root@kuber-master ssl]# cp $K8S_CONFIG_FILES/config/etcd.conf  /etc/etcd/etcd.conf
@@ -251,6 +263,7 @@ ps: etcd-csr.json文件中hosts字段ip需要把所有etcd节点的ip和主机�
 	#
 	#[Auth]
 	#ETCD_AUTH_TOKEN="simple"
+	
 配置文件说明：
 
 	1.ETCD_DATA_DIR如果这个目录在还没启动etcd时就已经存在了，说明你曾经装过etcd，请把所有节点的/var/lib/etcd下的所有文件都删除，保留/var/lib/etcd为空目录，否则etcd将不会启动成功
@@ -258,46 +271,56 @@ ps: etcd-csr.json文件中hosts字段ip需要把所有etcd节点的ip和主机�
 	3.ETCD_NAME需要给每个节点取一个不同的名字，例如kuber-master这台机器，我取名为etcd-master，kuber-node1我取名为etcd-node1
 	4.ETCD_INITIAL_CLUSTERxuya需要写入所有的节点
 	5.ETCD_INITIAL_CLUSTER_STATE首次运行写"new"，运行成功后修改为existing,再重启etcd服务
+	
 2.6 启动etcd服务（本步骤在所有节点上执行，并且需要同时启动，不能是第一个节点启动成功后再启动第二个etcd节点，建议开多个终端，分别执行，否则etcd服务可能执行不成功）
 
 	[root@kuber-master ~]# systemctl enable etcd
 	[root@kuber-master ~]# systemctl start etcd
 	[root@kuber-node2 ~]# systemctl status  etcd
+	
 如果服务没有启动,使用journalctl -xe查看，如果出现以下错误信息，需要修改/etc/etcd/ssl下所有文件的属主为etcd：
 
 	Jan 08 12:13:47 kuber-master etcd[17420]: open /etc/etcd/ssl/etcd-key.pem: permission denied
 	Jan 08 12:13:47 kuber-master systemd[1]: etcd.service: main process exited, code=exited, status=1/FAILURE
 	Jan 08 12:13:47 kuber-master systemd[1]: Failed to start Etcd Server.
+	
 2.7 检查etcd集群健康状态，在任意一个etcd节点上执行如下步骤（我这是在kuber-master上执行，但是访问的是kuber-node2节点）：
 	
 	[root@kuber-master ~]# etcdctl --cert-file=/etc/etcd/ssl/etcd.pem  \
 	--key-file=/etc/etcd/ssl/etcd-key.pem \
 	--ca-file=/etc/etcd/ssl/etcd-ca.pem \
 	--endpoint https://kuber-node2:2379 cluster-health
+	
 显示信息如下：
 
 	member 14b69ef4fd7851b4 is healthy: got healthy result from https://kuber-node1:2379
 	member 773eb256b3c437b8 is healthy: got healthy result from https://kuber-master:2379
 	member ed5a8029cadfb1e3 is healthy: got healthy result from https://kuber-node2:2379
+	
 ###Calico安装
 
 原文的calico安装放在比较靠后的地方，导致依赖它的服务启动不起来，这里我们把它首先安装。
+
 Calico 是一款纯 Layer 3 的数据中心网络方案(不需要 Overlay 网络)，Calico 好处是他已与各种云原生平台有良好的整合，而 Calico 在每一个节点利用 Linux Kernel 实现高效的 vRouter 来负责数据的转发，而当数据中心复杂度增加时，可以用 BGP route reflector 来达成。
+
 1 保证每个节点上的docker服务启动，因为calico服务运行在容器中的（我这在kuber-master上执行的，其他节点也一样）
 	
 	[root@kuber-master ssl]# systemctl status docker 
 	● docker.service - Docker Application Container Engine
 	   Loaded: loaded (/usr/lib/systemd/system/docker.service; enabled; vendor preset: disabled)
 	   Active: active (running) since Sun 2018-01-07 20:28:53 CST; 16h ago
+	   
 2.下载配置cni组件（此步骤在kuber-master上进行）	
 
 	[root@kuber-master ~]# mkdir -p /opt/cni/bin && cd /opt/cni/bin
 	[root@kuber-master ~]# export CNI_URL="https://github.com/containernetworking/plugins/releases/download"
 	[root@kuber-master bin]# wget  "${CNI_URL}/v0.6.0/cni-plugins-amd64-v0.6.0.tgz" 
 	[root@kuber-master bin]# tar -xf cni-plugins-amd64-v0.6.0.tgz
+	
 如果下载不成功可以使用我已经下好的，把wget那条命令换成如下的命令：
 
 	[root@kuber-master bin]# cp $K8S_CONFIG_FILES/software/cni-plugins-amd64-v0.6.0.tgz  ./
+	
 3 下载calico(此步骤在kuber-master进行)：
 
 	[root@kuber-master bin]# wget https://github.com/projectcalico/calicoctl/releases/download/v1.6.1/calicoctl -O /usr/bin/calicoctl
@@ -307,6 +330,7 @@ Calico 是一款纯 Layer 3 的数据中心网络方案(不需要 Overlay 网络
 	[root@kuber-master bin]# wget -N -P /opt/cni/bin ${CALICO_URL}/calico
 	[root@kuber-master bin]# wget -N -P /opt/cni/bin ${CALICO_URL}/calico-ipam
 	[root@kuber-master bin]# chmod +x calico calico-ipam
+	
 4 接着修改CNI plugins配置文件，以及 calico-node.service：
 
 	[root@kuber-master bin]# mkdir -pv /etc/cni/net.d
@@ -314,9 +338,11 @@ Calico 是一款纯 Layer 3 的数据中心网络方案(不需要 Overlay 网络
 	[root@kuber-master bin]# cp $K8S_CONFIG_FILES/network/calico-node.service /lib/systemd/system/
 	[root@kuber-master ssl]# systemctl enable calico-node
 	[root@kuber-master ssl]# systemctl start calico-node
+	
 修改/etc/cni/net.d/10-calico.conf，修改信息如下：
 
 	etcd_endpoints需要把所有的etcd节点访问url加进去，这样可以避免其中一个etcd节点出了问题不影响客户端访问etcd集群
+	
 修改/lib/systemd/system/calico-node.serviceye，修改信息如下：
 
 	ETCD_ENDPOINTS的值变为所有etcd节点的访问url
@@ -333,6 +359,7 @@ Calico 是一款纯 Layer 3 的数据中心网络方案(不需要 Overlay 网络
 		ssh $i systemctl enable calico-node.service
 		ssh $i systemctl start calico-node.service
 	done
+	
 如果无法启动，使用journalctl -xe查看原因，如果出现以下原因：
 
 	 WARNING: Unable to auto-detect an IPv4 address using interface regexes [eth0]: no valid IPv4 addresses found on the host interfaces
@@ -341,6 +368,7 @@ Calico 是一款纯 Layer 3 的数据中心网络方案(不需要 Overlay 网络
 可能的情况就是/lib/systemd/system/calico-node.serviceye的IP_AUTODETECTION_METHOD值设置不对，比如我这的10.61.0.160是在eth2上，这时需要把IP_AUTODETECTION_METHOD和IP6_AUTODETECTION_METHOD的值改为eth2。
 
 启动以后需要等一段时间，因为要拉取镜像，在每个节点上可以使用docker ps查看容器是否启动起来了。
+
 6 在kuber-master上查看 Calico nodes:
 
 	[root@kuber-master ssl]# cat <<EOF > ~/calico-rc
@@ -372,6 +400,7 @@ Master 是 Kubernetes 的大总管，主要创建apiserver、Controller manager�
 	[root@kuber-master k8s]# tar -xf kubernetes/server/kubernetes-server-linux-amd64.tar.gz
 	[root@kuber-master k8s]# ls -l kubernetes/server/bin
 	[root@kuber-master k8s]# cp  kubernetes/server/bin/kubectl  kubernetes/server/bin/kubelet  /usr/local/bin
+	
 2 创建集群 CA 与 Certificates
 
 在这部分，将会需要生成 client 与 server 的各组件 certificates，并且替 Kubernetes admin user 生成 client 证书。
@@ -380,10 +409,12 @@ Master 是 Kubernetes 的大总管，主要创建apiserver、Controller manager�
 
 	[root@kuber-master k8s]# mkdir -p /etc/kubernetes/pki && cd /etc/kubernetes/pki
 	[root@kuber-master pki]# export KUBE_APISERVER="https://10.61.0.160:6443"
+	
 复制ca-config.json与ca-csr.json文件到当前目录，并生成 CA 密钥：
 
 	[root@kuber-master pki]# cp $K8S_CONFIG_FILES/pki/ca-csr.json  $K8S_CONFIG_FILES/pki/ca-config.json   ./
 	[root@kuber-master pki]# cfssl gencert -initca ca-csr.json | cfssljson -bare ca
+	
 2.2 API server certificate
 
 复制apiserver-csr.json文件，并生成 kube-apiserver certificate 证书：
@@ -396,6 +427,7 @@ Master 是 Kubernetes 的大总管，主要创建apiserver、Controller manager�
 	-hostname=10.96.0.1,10.61.0.160,127.0.0.1,kubernetes.default,kuber-master \
 	-profile=kubernetes \
 	apiserver-csr.json | cfssljson -bare apiserver
+	
 2.3 Front proxy certificate
 
 复制front-proxy-ca-csr.json文件，并生成 Front proxy CA 密钥，Front proxy 主要是用在 API aggregator 上:
@@ -403,6 +435,7 @@ Master 是 Kubernetes 的大总管，主要创建apiserver、Controller manager�
 	[root@kuber-master pki]# cp $K8S_CONFIG_FILES/pki/front-proxy-ca-csr.json   ./
 	[root@kuber-master pki]#  cfssl gencert \
 	-initca front-proxy-ca-csr.json | cfssljson -bare front-proxy-ca
+	
 复制front-proxy-client-csr.json文件，并生成 front-proxy-client 证书：
 
 	[root@kuber-master pki]# cp $K8S_CONFIG_FILES/pki/front-proxy-client-csr.json ./
@@ -412,6 +445,7 @@ Master 是 Kubernetes 的大总管，主要创建apiserver、Controller manager�
 	-config=ca-config.json \
 	-profile=kubernetes \
 	front-proxy-client-csr.json | cfssljson -bare front-proxy-client
+	
 2.4 Bootstrap Token
 	
 由于通过手动创建 CA 方式太过繁杂，只适合少量机器，因为每次签证时都需要绑定 Node IP，随机器增加会带来很多困扰，因此这边使用 TLS Bootstrapping 方式进行授权，由 apiserver 自动给符合条件的 Node 发送证书来授权加入集群。
@@ -557,11 +591,13 @@ Master 是 Kubernetes 的大总管，主要创建apiserver、Controller manager�
 	# scheduler set default context
 	[root@kuber-master pki]# kubectl config use-context system:kube-scheduler@kubernetes \
 	--kubeconfig=../scheduler.conf
+	
 2.8 Kubelet master certificate
 
 复制kubelet-csr.json文件，并生成 master node certificate 证书：
 
 	[root@kuber-master pki]# cp $K8S_CONFIG_FILES/pki/kubelet-csr.json ./
+	
 把NODE字符串替换为master主机名(我这是kuber-master):
 
 	[root@kuber-master pki]# sed -i 's@NODE@kuber-master@g' kubelet-csr.json
@@ -572,6 +608,7 @@ Master 是 Kubernetes 的大总管，主要创建apiserver、Controller manager�
 	-hostname=kuber-master,10.61.0.160 \
 	-profile=kubernetes \
 	kubelet-csr.json | cfssljson -bare kubelet
+	
 此处的-hostname需要根据实际情况做调整。
 
 接着通过以下指令生成名称为 kubelet.conf 的 kubeconfig 文件：
@@ -600,6 +637,7 @@ Master 是 Kubernetes 的大总管，主要创建apiserver、Controller manager�
 	# kubelet set default context
 	[root@kuber-master pki]# kubectl config use-context system:node:kuber-master@kubernetes \
 	--kubeconfig=../kubelet.conf
+	
 ps: 需要根据实际情况将system:node:kuber-master 中的kuber-master进行替换。
 
 2.9 Service account key
@@ -648,12 +686,14 @@ Service account 不是通过 CA 进行认证，因此不要通过 CA 来做 Serv
 	-rw-r--r-- 1 root root  199 Jan  8 16:12 scheduler-csr.json
 	-rw------- 1 root root 1679 Jan  8 16:14 scheduler-key.pem
 	-rw-r--r-- 1 root root 1472 Jan  8 16:14 scheduler.pem
+	
 ###安装 Kubernetes 核心组件
 
 1 首先复制 Kubernetes 核心组件 YAML 文件，这边我们不透过 Binary 方案来创建 Master 核心组件，而是利用 Kubernetes Static Pod 来创建，因此需下载所有核心组件的Static Pod文件到/etc/kubernetes/manifests目录：
 
 	[root@kuber-master pki]# mkdir -p /etc/kubernetes/manifests && cd /etc/kubernetes/manifests
 	[root@kuber-master manifests]# for i in apiserver manager scheduler; do cp $K8S_CONFIG_FILES/master/${i}.yml ./;done
+	
 2 修改/etc/kubernetes/manifests/apiserver.yml配置文件，修改信息如下：
 
 	1.--advertise-address，ip需要根据实际情况做改动
@@ -679,6 +719,7 @@ Service account 不是通过 CA 进行认证，因此不要通过 CA 来做 Serv
 				  secret: mwYib16D3v9fpBqOstsfHlgpniZzPjWvPcRGz2iGDtk=
 		  - identity: {}
 	EOF
+	
 5 在/etc/kubernetes/目录下，创建audit-policy.yml的进阶审核策略 YAML 文件：
 
 	[root@kuber-master manifests]# cat <<EOF > /etc/kubernetes/audit-policy.yml
@@ -687,11 +728,13 @@ Service account 不是通过 CA 进行认证，因此不要通过 CA 来做 Serv
 	rules:
 	- level: Metadata
 	EOF
+	
 6 下载kubelet.service相关文件来管理 kubelet：
 
 	[root@kuber-master manifests]# mkdir -p /etc/systemd/system/kubelet.service.d
 	[root@kuber-master manifests]# cp $K8S_CONFIG_FILES/master/10-kubelet.conf  /etc/systemd/system/kubelet.service.d/
 	[root@kuber-master manifests]# cp $K8S_CONFIG_FILES/master/kubelet.service /lib/systemd/system/
+	
 7 修改配置文件/etc/systemd/system/kubelet.service.d/10-kubelet.conf，修改信息如下：
 
 	1.KUBELET_POD_CONTAINER,如果拉取不到该容器，可以使用如下的根容器：
@@ -699,10 +742,12 @@ Service account 不是通过 CA 进行认证，因此不要通过 CA 来做 Serv
 	
 	2.由于我这的docker版本的cgroup-driver采用的是systemd，需要显式指定(我这已经加上了，原文没加可能是docker版本不同)，即添加--cgroup-driver=systemd，否则启动服务的时候可能会报下面的错误：
 	 kubelet[13924]: error: failed to run Kubelet: failed to create kubelet: misconfiguration: kubelet cgroup driver: "cgroupfs" is different from docker cgroup driver: "systemd"
+	 
 8 最后创建 var 存放信息，然后启动 kubelet 服务:
 
 	[root@kuber-master manifests]# mkdir -p /var/lib/kubelet /var/log/kubernetes
 	[root@kuber-master manifests]#  systemctl enable kubelet.service && systemctl start kubelet.service
+	
 9 其他说明：
 	
 	1.如果使用systemctl status kubelet,看见如下信息，不要惊慌，因为apiserver还没启动：
@@ -716,6 +761,7 @@ Service account 不是通过 CA 进行认证，因此不要通过 CA 来做 Serv
 	tcp    LISTEN     0      128      :::6443                 :::*                   users:(("kube-apiserver",pid=6893,fd=164))
 	tcp    LISTEN     0      128      :::10255                :::*                   users:(("kubelet",pid=6216,fd=21))
 	tcp    LISTEN     0      128      :::4194                 :::*                   users:(("kubelet",pid=6216,fd=8))
+	
 10 完成后，复制 admin kubeconfig 文件，并通过简单指令验证：
 
 	[root@kuber-master manifests]# cp /etc/kubernetes/admin.conf ~/.kube/config
@@ -736,10 +782,12 @@ Service account 不是通过 CA 进行认证，因此不要通过 CA 来做 Serv
 	kube-apiserver-kuber-master            1/1       Running   0          5m
 	kube-controller-manager-kuber-master   1/1       Running   0          5m
 	kube-scheduler-kuber-master            1/1       Running   0          5m
+	
 确认服务能够执行 logs 等指令：
 
 	[root@kuber-master manifests]# kubectl -n kube-system logs -f kube-scheduler-kuber-master
 	Error from server (Forbidden): Forbidden (user=kube-apiserver, verb=get, resource=nodes, subresource=proxy) ( pods/log kube-scheduler-kuber-master)
+	
 ps: 这边会发现出现 403 Forbidden 问题，这是因为 kube-apiserver user 并没有 nodes 的资源权限，属于正常。
 
 由于上述权限问题，我们必需创建一个 apiserver-to-kubelet-rbac.yml 来定义权限，以供我们执行 logs、exec 等指令：
@@ -750,6 +798,7 @@ ps: 这边会发现出现 403 Forbidden 问题，这是因为 kube-apiserver use
 	clusterrole "system:kube-apiserver-to-kubelet" created
 	clusterrolebinding "system:kube-apiserver" created
 	[root@kuber-master kubernetes]# kubectl -n kube-system logs -f kube-scheduler-kuber-master
+	
 ###Kubernetes Node
 
 Node 是主要执行容器实例的节点，可视为工作节点。在这步骤我们会下载 Kubernetes binary 文件，并创建 node 的 certificate 来提供给节点注册认证用。Kubernetes 使用Node Authorizer来提供Authorization mode，这种授权模式会替 Kubelet 生成 API request。
@@ -765,6 +814,7 @@ Node 是主要执行容器实例的节点，可视为工作节点。在这步骤
 		  scp /etc/kubernetes/${FILE} ${NODE}:/etc/kubernetes/${FILE}
 		done
 	done
+	
 1 设置node节点的配置文件,使用脚本将配置文件传到各个node节点上：
 
 	[root@kuber-master kubernetes]# cat  /tmp/copy-kube-conf.sh
@@ -775,11 +825,13 @@ Node 是主要执行容器实例的节点，可视为工作节点。在这步骤
 		scp $K8S_CONFIG_FILES/node/kubelet.service  ${NODE}:/lib/systemd/system
 	done
 2 授权 Kubernetes Node
+
 当所有节点都完成后，在master节点，因为我们采用 TLS Bootstrapping，所需要创建一个 ClusterRoleBinding：
 
 	[root@kuber-master kubernetes]# kubectl create clusterrolebinding kubelet-bootstrap \
 	--clusterrole=system:node-bootstrapper \
 	--user=kubelet-bootstrap
+	
 3 启动各节点的kubelet服务，使用如下脚本进行：
 
 	[root@kuber-master kubernetes]# cat  /tmp/copy-kube-start.sh
@@ -787,9 +839,11 @@ Node 是主要执行容器实例的节点，可视为工作节点。在这步骤
 	for NODE in kuber-node1 kuber-node2 kuber-node3 kuber-node4; do
 		ssh ${NODE} "system start kubelet"
 	done
+	
 ps: 原文中是先启动各个节点的服务再授权，我经过测试，发现如果在未授权的情况下,各节点的kubelet服务根本无法启动，错误报告如下：
 
 	error: failed to run Kubelet: cannot create certificate signing request: certificatesigningrequests.certificates.k8s.io is forbidden: 
+	
 只有先授权，才能启动各节点的kubelet服务。
 
 4.检查节点是否成功加入
@@ -802,6 +856,7 @@ ps: 原文中是先启动各个节点的服务再授权，我经过测试，发�
 	node-csr-IhB-ttp82G_z5Sgh2oyCs1ygRjgj52X2qoOBVJmFpIE   9s        kubelet-bootstrap   Pending
 	node-csr-lsrD6n3t5gboFimV28ayVZdzPf_eoV702oMQTreRKUQ   1m        kubelet-bootstrap   Pending
 	node-csr-nm4TaOggBqgaWg98WOkaBh44X-Hn-N0AhWUr_VUQtBQ   51s       kubelet-bootstrap   Pending
+	
 通过 kubectl 来允许节点加入集群：
 
 	[root@kuber-master kubernetes]# kubectl get csr | awk '/Pending/ {print $1}' | xargs kubectl certificate approve
@@ -867,6 +922,7 @@ Kube-proxy 是实现 Service 的关键组件，kube-proxy 会在每台节点上�
 	# kube-proxy set default context
 	[root@kuber-master pki]# kubectl config use-context system:kube-proxy@kubernetes \
 	--kubeconfig=../kube-proxy.conf
+	
 在kuber-master将kube-proxy相关文件复制到 Node 节点上：
 
 	[root@kuber-master pki]# cat  /tmp/copy-kuber-proxy.sh
@@ -876,6 +932,7 @@ Kube-proxy 是实现 Service 的关键组件，kube-proxy 会在每台节点上�
 			scp /etc/kubernetes/${FILE} ${NODE}:/etc/kubernetes/${FILE}
 		done
 	done
+	
 完成后，在kuber-master通过 kubectl 来创建 kube-proxy daemon：
 
 	[root@kuber-master pki]# mkdir -p /etc/kubernetes/addons && cd /etc/kubernetes/addons
@@ -888,6 +945,7 @@ Kube-proxy 是实现 Service 的关键组件，kube-proxy 会在每台节点上�
 	kube-proxy-j8hs9   1/1       Running   0          30s
 	kube-proxy-ksfsw   1/1       Running   0          30s
 	kube-proxy-p85x8   1/1       Running   0          30s
+	
 **2 Calico policy controller**
 
 Calico 是一款纯 Layer 3 的数据中心网络方案(不需要 Overlay 网络)，Calico 好处是他已与各种云原生平台有良好的整合，而 Calico 在每一个节点利用 Linux Kernel 实现高效的 vRouter 来负责数据的转发，而当数据中心复杂度增加时，可以用 BGP route reflector 来达成。
@@ -917,6 +975,7 @@ Kube DNS 是 Kubernetes 集群内部 Pod 之间互相沟通的重要 Addon，它
 	kube-dns-6cb549f55f-xrbht   3/3       Running   3          11m
 
 ### Kubernetes Extra Addons 部署
+
 本节说明如何部署一些官方常用的 Addons，如 Dashboard、Heapster 等。
 
 **1 Dashboard addon**
@@ -941,6 +1000,7 @@ Dashboard 是 Kubernetes 社区官方开发的仪表板，有了仪表板后管�
 
 	NAME                       TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
 	svc/kubernetes-dashboard   ClusterIP   10.107.162.31   <none>        443/TCP   6m
+	
 P.S. 这边会额外创建一个名称为anonymous-open-door Cluster Role Binding，这仅作为方便测试时使用，在一般情况下不要开启，不然就会直接被存取所有 API。
 	
 	完成后，就可以透过浏览器访问 Dashboard，https://10.61.0.160:6443/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy
@@ -964,6 +1024,7 @@ P.S. 这边会额外创建一个名称为anonymous-open-door Cluster Role Bindin
 	- name: dashboard-token-vsvkl
 
  	[root@kuber-master addons]# kubectl -n kube-system describe secrets dashboard-token-vsvkl
+	
 把token贴到Kubernetes dashboard。
 
 ### Heapster addon
