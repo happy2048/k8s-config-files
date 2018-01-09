@@ -958,7 +958,9 @@ Kube DNS 是 Kubernetes 集群内部 Pod 之间互相沟通的重要 Addon，它
 	[root@kuber-master addons]#  kubectl apply -f kube-dns.yml
 	[root@kuber-master addons]# kubectl -n kube-system get po -l k8s-app=kube-dns
 	NAME                        READY     STATUS    RESTARTS   AGE
-	kube-dns-6cb549f55f-xrbht   3/3       Running   3          11m
+	kube-dns-6cb549f55f-xrbht   3/3       Running   3          11m
+
+如果其他服务一切正常，但是kube-dns只是启动了两个容器，另一个无法启动，可以把所有节点的iptables规则清空(iptables -F -t nat)，再重启kubelet服务。
 
 ### Kubernetes Extra Addons 部署
 
