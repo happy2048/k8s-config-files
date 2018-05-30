@@ -47,29 +47,33 @@
 	10.61.0.162 kuber-node2
 	10.61.0.163 kuber-node3
 	10.61.0.164 kuber-node4
-4.所有节点都安装docker引擎，这里我直接选择yum安装(以下步骤在所有节点上执行)：
+4.所有节点都安装docker引擎(以下步骤在所有节点上执行)：
 
 	[root@kuber-master ~]# yum install epel-release
-	[root@kuber-master ~]# yum install docker -y
+	[root@kuber-master ~]# yum install -y yum-utils device-mapper-persistent-data lvm2
+	[root@kuber-master ~]# yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+	[root@kuber-master ~]# yum install docker-ce -y
 	[root@kuber-master ~]# systemctl enable docker && systemctl restart docker
 	[root@kuber-master ~]# docker version 
 	Client:
-	 Version:         1.12.6
-	 API version:     1.24
-	 Package version: docker-1.12.6-68.gitec8512b.el7.centos.x86_64
-	 Go version:      go1.8.3
-	 Git commit:      ec8512b/1.12.6
-	 Built:           Mon Dec 11 16:08:42 2017
-	 OS/Arch:         linux/amd64
-
+	 Version:      18.03.1-ce
+	 API version:  1.37
+	 Go version:   go1.9.5
+	 Git commit:   9ee9f40
+	 Built:        Thu Apr 26 07:20:16 2018
+	 OS/Arch:      linux/amd64
+	 Experimental: false
+	 Orchestrator: swarm
 	Server:
-	 Version:         1.12.6
-	 API version:     1.24
-	 Package version: docker-1.12.6-68.gitec8512b.el7.centos.x86_64
-	 Go version:      go1.8.3
-	 Git commit:      ec8512b/1.12.6
-	 Built:           Mon Dec 11 16:08:42 2017
-	 OS/Arch:         linux/amd64
+	 Engine:
+	  Version:      18.03.1-ce
+	  API version:  1.37 (minimum version 1.12)
+	  Go version:   go1.9.5
+	  Git commit:   9ee9f40
+	  Built:        Thu Apr 26 07:23:58 2018
+	  OS/Arch:      linux/amd64
+	  Experimental: false
+
 
 5.所有节点需要设定/etc/sysctl.d/k8s.conf的系统参数。
 
