@@ -171,11 +171,11 @@ ps: 本步骤中的两个json文件无需做更改,其中etcd-ca-csr.json中name
 
 	[root@kuber-master ssl]# cp $K8S_CONFIG_FILES/pki/etcd-csr.json  ./
 	[root@kuber-master ssl]# cfssl gencert \
-	>  -ca=etcd-ca.pem \
-	> -ca-key=etcd-ca-key.pem \
-	> -config=ca-config.json \
-	> -profile=kubernetes \
-	> etcd-csr.json | cfssljson -bare etcd
+	-ca=etcd-ca.pem \
+	-ca-key=etcd-ca-key.pem \
+	-config=ca-config.json \
+	-profile=kubernetes \
+	etcd-csr.json | cfssljson -bare etcd
 	
 修改属主：
 
