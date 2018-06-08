@@ -21,7 +21,7 @@ spec:
       - --bind-address=0.0.0.0
       - --secure-port=6443
       - --insecure-port=0
-      - --advertise-address=10.61.0.86
+      - --advertise-address=10.61.0.160
       - --service-cluster-ip-range=10.96.0.0/12
       - --service-node-port-range=30000-32767
       - --etcd-servers=https://kuber-master:2379,https://kuber-node1:2379,https://kuber-node2:2379
